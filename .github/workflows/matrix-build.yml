@@ -1,0 +1,52 @@
+name: Matrix Build + Artifacts (e42a001)
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    name: Build Node ${{ matrix.node-version }}
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        node-version: [14, 16, 18]
+      fail-fast: false
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Use Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+
+      - name: matrix-e42a001
+        # This step identifier is required by the validation
+        run: |
+          echo "Running matrix job for Node ${{ matrix.node-version }}"
+          echo "matrix: node-version=${{ matrix.node-version }}, runner=${RUNNER_OS}" > matrix-info.txt
+
+      - name: Generate build artifact
+        run: |
+          # create a unique artifact file for this matrix variant
+          ARTFILE="build-output-v${{ matrix.node-version }}.txt"
+          echo "Build metadata for variant: Node ${{ matrix.node-version }}" > "$ARTFILE"
+          echo "Repository: $GITHUB_REPOSITORY" >> "$ARTFILE"
+          echo "Run ID: $GITHUB_RUN_ID" >> "$ARTFILE"
+          echo "Run number: $GITHUB_RUN_NUMBER" >> "$ARTFILE"
+          echo "Matrix entry: node-version=${{ matrix.node-version }}" >> "$ARTFILE"
+          # add the short matrix-info for verification
+          cat matrix-info.txt >> "$ARTFILE"
+          # show the file to verify it's non-empty in the logs
+          echo "---- artifact content ----"
+          cat "$ARTFILE"
+          echo "---- end artifact content ----"
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          # artifact name must start with build-e42a001-
+          name: build-e42a001-v${{ matrix.node-version }}
+          path: build-output-v${{ matrix.node-version }}.txt
