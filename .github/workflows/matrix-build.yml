@@ -1,18 +1,18 @@
 name: Matrix Build + Artifacts (e42a001)
 
+# Trigger on any push (any branch) and allow manual runs
 on:
-  push:
-    branches: [ main ]
-  workflow_dispatch:
+  push: {}
+  workflow_dispatch: {}
 
 jobs:
   build:
     name: Build Node ${{ matrix.node-version }}
     runs-on: ubuntu-latest
     strategy:
-      matrix:
-        node-version: [14, 16, 18]
       fail-fast: false
+      matrix:
+        node-version: [14, 16, 18]  # <-- 3 variants guaranteed
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -23,30 +23,28 @@ jobs:
           node-version: ${{ matrix.node-version }}
 
       - name: matrix-e42a001
-        # This step identifier is required by the validation
+        # Required identifier for validator
         run: |
-          echo "Running matrix job for Node ${{ matrix.node-version }}"
-          echo "matrix: node-version=${{ matrix.node-version }}, runner=${RUNNER_OS}" > matrix-info.txt
+          echo "Identifier: matrix-e42a001"
+          echo "matrix.node-version=${{ matrix.node-version }}" > matrix-info.txt
+          echo "runner_os=${RUNNER_OS}" >> matrix-info.txt
+          cat matrix-info.txt
 
       - name: Generate build artifact
         run: |
-          # create a unique artifact file for this matrix variant
           ARTFILE="build-output-v${{ matrix.node-version }}.txt"
           echo "Build metadata for variant: Node ${{ matrix.node-version }}" > "$ARTFILE"
           echo "Repository: $GITHUB_REPOSITORY" >> "$ARTFILE"
           echo "Run ID: $GITHUB_RUN_ID" >> "$ARTFILE"
           echo "Run number: $GITHUB_RUN_NUMBER" >> "$ARTFILE"
-          echo "Matrix entry: node-version=${{ matrix.node-version }}" >> "$ARTFILE"
-          # add the short matrix-info for verification
+          echo "" >> "$ARTFILE"
           cat matrix-info.txt >> "$ARTFILE"
-          # show the file to verify it's non-empty in the logs
-          echo "---- artifact content ----"
+          echo "---- artifact content start ----"
           cat "$ARTFILE"
-          echo "---- end artifact content ----"
+          echo "---- artifact content end ----"
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
-          # artifact name must start with build-e42a001-
           name: build-e42a001-v${{ matrix.node-version }}
           path: build-output-v${{ matrix.node-version }}.txt
